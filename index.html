@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>東京都北区 通学傘予報</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: rgba(255, 255, 255, 0.88);
+      --text: #172033;
+      --muted: #667085;
+      --line: rgba(15, 23, 42, 0.08);
+      --shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
+      --ok: #10b981;
+      --warn: #f59e0b;
+      --danger: #f97316;
+      --return: #6366f1;
+      --radius: 24px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --card: rgba(30, 41, 59, 0.9);
+        --text: #f8fafc;
+        --muted: #cbd5e1;
+        --line: rgba(255, 255, 255, 0.12);
+        --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100svh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.28), transparent 30%),
+        radial-gradient(circle at 90% 10%, rgba(168, 85, 247, 0.20), transparent 30%),
+        var(--bg);
+      display: flex;
+      justify-content: center;
+      padding: 14px;
+    }
+
+    .app {
+      width: min(430px, 100%);
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 4px 2px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.05rem;
+      line-height: 1.25;
+      letter-spacing: 0.02em;
+    }
+
+    .meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: var(--card);
+      border-radius: 999px;
+      padding: 8px 11px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .status-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      border: 1px solid var(--line);
+    }
+
+    .status-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--accent-soft), transparent 64%);
+      pointer-events: none;
+    }
+
+    .status-inner {
+      position: relative;
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .icon-bubble {
+      width: 78px;
+      height: 78px;
+      display: grid;
+      place-items: center;
+      border-radius: 24px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      font-size: 2.8rem;
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+    }
+
+    .status-title {
+      margin: 0;
+      font-size: clamp(1.65rem, 8vw, 2.2rem);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+
+    .reason {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+      font-weight: 650;
+    }
+
+    .danger {
+      --accent: #fb923c;
+      --accent2: #ef4444;
+      --accent-soft: rgba(249, 115, 22, 0.22);
+    }
+
+    .return-rain {
+      --accent: #818cf8;
+      --accent2: #7c3aed;
+      --accent-soft: rgba(99, 102, 241, 0.22);
+    }
+
+    .watch {
+      --accent: #facc15;
+      --accent2: #f59e0b;
+      --accent-soft: rgba(245, 158, 11, 0.22);
+    }
+
+    .light-rain {
+      --accent: #38bdf8;
+      --accent2: #6366f1;
+      --accent-soft: rgba(56, 189, 248, 0.20);
+    }
+
+    .clear {
+      --accent: #2dd4bf;
+      --accent2: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.20);
+    }
+
+    .loading {
+      --accent: #94a3b8;
+      --accent2: #64748b;
+      --accent-soft: rgba(148, 163, 184, 0.16);
+    }
+
+    .section {
+      border-radius: 20px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+      padding: 13px;
+    }
+
+    .section-title {
+      margin: 0 0 9px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+
+    .hour-cell {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 7px 3px;
+      text-align: center;
+      min-width: 0;
+      background: rgba(148, 163, 184, 0.08);
+    }
+
+    .hour-cell.rain {
+      background: rgba(99, 102, 241, 0.16);
+      border-color: rgba(99, 102, 241, 0.35);
+    }
+
+    .hour-cell.small {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.34);
+    }
+
+    .hour-cell.clearish {
+      background: rgba(34, 197, 94, 0.10);
+      border-color: rgba(34, 197, 94, 0.22);
+    }
+
+    .hour {
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .wicon {
+      font-size: 1.25rem;
+      line-height: 1.2;
+      margin: 2px 0;
+    }
+
+    .pop, .mm {
+      font-size: 0.66rem;
+      line-height: 1.25;
+      color: var(--muted);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .temp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      align-items: stretch;
+    }
+
+    .temp-box {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 10px;
+      background: rgba(148, 163, 184, 0.08);
+    }
+
+    .temp-label {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 800;
+      margin-bottom: 3px;
+    }
+
+    .temp-value {
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .comment {
+      grid-column: 1 / -1;
+      padding: 10px 11px;
+      border-radius: 16px;
+      background: rgba(245, 158, 11, 0.13);
+      border: 1px solid rgba(245, 158, 11, 0.22);
+      color: var(--text);
+      font-size: 0.86rem;
+      line-height: 1.35;
+      font-weight: 750;
+    }
+
+    footer {
+      color: var(--muted);
+      font-size: 0.68rem;
+      text-align: center;
+      padding: 0 4px 6px;
+    }
+
+    .error {
+      color: #ef4444;
+      font-weight: 800;
+    }
+
+    @media (max-height: 720px) {
+      body {
+        padding: 10px;
+      }
+
+      .app {
+        gap: 9px;
+      }
+
+      .status-card {
+        padding: 16px;
+      }
+
+      .status-inner {
+        grid-template-columns: 68px 1fr;
+      }
+
+      .icon-bubble {
+        width: 68px;
+        height: 68px;
+        border-radius: 20px;
+        font-size: 2.35rem;
+      }
+
+      .section {
+        padding: 10px;
+      }
+
+      .reason {
+        font-size: 0.84rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1 id="targetTitle">通学予報を取得中...</h1>
+        <div class="meta">
+          東京都北区 / 最終更新 <span id="updatedAt">--:--</span>
+        </div>
+      </div>
+      <button id="refreshBtn" type="button">更新</button>
+    </header>
+
+    <section id="mainCard" class="status-card loading">
+      <div class="status-inner">
+        <div id="mainIcon" class="icon-bubble">⏳</div>
+        <div>
+          <p id="statusText" class="status-title">読み込み中</p>
+          <p id="reasonText" class="reason">Open-Meteo から最新予報を取得しています。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <span>7:00〜18:00 タイムライン</span>
+        <span>☔ = 雨注意</span>
+      </div>
+      <div id="timeline" class="timeline"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <span>気温 & ひとこと</span>
+        <span id="tempDateLabel">--</span>
+      </div>
+      <div class="temp-grid">
+        <div class="temp-box">
+          <div class="temp-label">7〜18時</div>
+          <div id="dayTemp" class="temp-value">--℃ / --℃</div>
+        </div>
+        <div class="temp-box">
+          <div class="temp-label">登校時 7〜8時</div>
+          <div id="schoolTemp" class="temp-value">--℃</div>
+        </div>
+        <div id="tempComment" class="comment">--</div>
+      </div>
+    </section>
+
+    <footer>
+      Weather data by Open-Meteo API / 判定は目安です。実際の空模様も確認してください。
+    </footer>
+  </div>
+
+  <script>
+    /*
+      ==============================
+      カスタマイズしやすい設定
+      ==============================
+    */
+    const CONFIG = {
+      LATITUDE: 35.7528,
+      LONGITUDE: 139.7336,
+      TIMEZONE: "Asia/Tokyo",
+
+      // この値以上なら「雨の可能性あり」と判定
+      RAIN_PROB_THRESHOLD_PERCENT: 40,
+
+      // この値以上なら「雨」と判定
+      RAIN_AMOUNT_THRESHOLD_MM: 0.1,
+
+      // 最大降水量がこの値以下なら「小雨・パラつく程度」として弱めの表現にする
+      LIGHT_RAIN_MAX_MM: 1.0,
+
+      // 気温コメントの基準
+      HOT_TEMP_C: 28,
+      VERY_HOT_TEMP_C: 33,
+      COLD_TEMP_C: 8,
+      COOL_TEMP_C: 12,
+      BIG_TEMP_DIFF_C: 10,
+
+      // Open-Meteo weather_code のうち、雨・雪・雷など傘注意にするコード
+      WET_WEATHER_CODES: [
+        51, 53, 55, 56, 57,       // 霧雨
+        61, 63, 65, 66, 67,       // 雨・着氷性の雨
+        71, 73, 75, 77,           // 雪
+        80, 81, 82,               // にわか雨
+        85, 86,                   // にわか雪
+        95, 96, 99                // 雷雨
+      ]
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    const refreshBtn = $("refreshBtn");
+    refreshBtn.addEventListener("click", loadWeather);
+
+    window.addEventListener("DOMContentLoaded", loadWeather);
+
+    async function loadWeather() {
+      setLoading();
+
+      const target = getTargetDateInfo();
+      renderHeader(target);
+
+      try {
+        const url = buildApiUrl();
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error("天気APIの取得に失敗しました。");
+
+        const data = await res.json();
+        const rows = extractTargetRows(data, target.ymd);
+
+        if (rows.length < 12) {
+          throw new Error("対象時間帯の予報データが不足しています。");
+        }
+
+        const result = analyzeUmbrellaNeed(rows);
+        const temp = analyzeTemperature(rows);
+
+        renderMain(result);
+        renderTimeline(rows);
+        renderTemperature(temp, target);
+        $("updatedAt").textContent = formatTokyoDateTime(new Date());
+      } catch (err) {
+        console.error(err);
+        renderError(err);
+      }
+    }
+
+    function buildApiUrl() {
+      const params = new URLSearchParams({
+        latitude: CONFIG.LATITUDE,
+        longitude: CONFIG.LONGITUDE,
+        hourly: [
+          "temperature_2m",
+          "precipitation_probability",
+          "precipitation",
+          "weather_code"
+        ].join(","),
+        timezone: CONFIG.TIMEZONE,
+        forecast_days: "3"
+      });
+
+      return `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
+    }
+
+    function getTargetDateInfo() {
+      const nowParts = getTokyoParts(new Date());
+      const todayYmd = `${nowParts.year}-${nowParts.month}-${nowParts.day}`;
+
+      // 0:00〜7:59 は今日、8:00以降は明日
+      const isToday = Number(nowParts.hour) < 8;
+      const ymd = addDays(todayYmd, isToday ? 0 : 1);
+      const [y, m, d] = ymd.split("-");
+
+      return {
+        ymd,
+        label: isToday ? "今日" : "明日",
+        displayDate: `${Number(m)}/${Number(d)}`
+      };
+    }
+
+    function getTokyoParts(date) {
+      const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: CONFIG.TIMEZONE,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23"
+      });
+
+      const parts = Object.fromEntries(
+        formatter.formatToParts(date).map(p => [p.type, p.value])
+      );
+
+      return {
+        year: parts.year,
+        month: parts.month,
+        day: parts.day,
+        hour: parts.hour,
+        minute: parts.minute
+      };
+    }
+
+    function addDays(ymd, days) {
+      const [y, m, d] = ymd.split("-").map(Number);
+      const date = new Date(Date.UTC(y, m - 1, d + days));
+      const yy = date.getUTCFullYear();
+      const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(date.getUTCDate()).padStart(2, "0");
+      return `${yy}-${mm}-${dd}`;
+    }
+
+    function renderHeader(target) {
+      $("targetTitle").textContent = `${target.label}（${target.displayDate}）の通学予報`;
+      $("tempDateLabel").textContent = `対象日 ${target.displayDate}`;
+    }
+
+    function extractTargetRows(data, targetYmd) {
+      const h = data.hourly;
+      const rows = [];
+
+      for (let i = 0; i < h.time.length; i++) {
+        const time = h.time[i];
+        const datePart = time.slice(0, 10);
+        const hour = Number(time.slice(11, 13));
+
+        if (datePart === targetYmd && hour >= 7 && hour <= 18) {
+          rows.push({
+            time,
+            hour,
+            temp: safeNumber(h.temperature_2m[i]),
+            pop: safeNumber(h.precipitation_probability[i]),
+            precip: safeNumber(h.precipitation[i]),
+            code: Number(h.weather_code[i])
+          });
+        }
+      }
+
+      return rows;
+    }
+
+    function safeNumber(value) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return 0;
+      return Number(value);
+    }
+
+    function isRainHour(row) {
+      return (
+        row.pop >= CONFIG.RAIN_PROB_THRESHOLD_PERCENT ||
+        row.precip >= CONFIG.RAIN_AMOUNT_THRESHOLD_MM ||
+        CONFIG.WET_WEATHER_CODES.includes(row.code)
+      );
+    }
+
+    function analyzeUmbrellaNeed(rows) {
+      const morning = rows.filter(r => r.hour === 7 || r.hour === 8);
+      const daytime = rows.filter(r => r.hour >= 9 && r.hour <= 14);
+      const returning = rows.filter(r => r.hour >= 15 && r.hour <= 18);
+
+      const morningRain = morning.filter(isRainHour);
+      const daytimeRain = daytime.filter(isRainHour);
+      const returningRain = returning.filter(isRainHour);
+
+      let targetRows = [];
+      let priority = "clear";
+
+      if (morningRain.length > 0) {
+        priority = "morning";
+        targetRows = morningRain;
+      } else if (returningRain.length > 0) {
+        priority = "return";
+        targetRows = returningRain;
+      } else if (daytimeRain.length > 0) {
+        priority = "daytime";
+        targetRows = daytimeRain;
+      }
+
+      const allRainRows = rows.filter(isRainHour);
+      const maxPop = Math.max(...rows.map(r => r.pop));
+      const maxPrecipAll = Math.max(...rows.map(r => r.precip));
+      const maxPrecipTarget = targetRows.length
+        ? Math.max(...targetRows.map(r => r.precip))
+        : 0;
+      const maxPopTarget = targetRows.length
+        ? Math.max(...targetRows.map(r => r.pop))
+        : 0;
+
+      const isLight = targetRows.length > 0 && maxPrecipTarget <= CONFIG.LIGHT_RAIN_MAX_MM;
+      const rainHoursText = targetRows.map(r => `${r.hour}時`).join("・");
+
+      if (priority === "morning") {
+        if (isLight) {
+          return {
+            cls: "light-rain",
+            icon: "🌂",
+            title: `小雨予報（${maxPrecipTarget.toFixed(1)}mm）`,
+            reason: `登校時間帯（${rainHoursText}）に雨の可能性。強い雨ではなさそうですが、折りたたみ傘があると安心です。降水確率最大${maxPopTarget}%`
+          };
+        }
+        return {
+          cls: "danger",
+          icon: "☔",
+          title: "傘が絶対必要！",
+          reason: `登校時間帯（${rainHoursText}）に雨予報。最大${maxPrecipTarget.toFixed(1)}mm・降水確率最大${maxPopTarget}%`
+        };
+      }
+
+      if (priority === "return") {
+        if (isLight) {
+          return {
+            cls: "light-rain",
+            icon: "🌂",
+            title: `帰りに小雨かも`,
+            reason: `下校時間帯（${rainHoursText}）に小雨予報。最大${maxPrecipTarget.toFixed(1)}mmなので、折りたたみ傘があれば安心です。`
+          };
+        }
+        return {
+          cls: "return-rain",
+          icon: "☔",
+          title: "傘が必要",
+          reason: `帰り雨予報です。下校時間帯（${rainHoursText}）に最大${maxPrecipTarget.toFixed(1)}mm・降水確率最大${maxPopTarget}%`
+        };
+      }
+
+      if (priority === "daytime") {
+        if (isLight) {
+          return {
+            cls: "watch",
+            icon: "🌦️",
+            title: "日中に小雨予報",
+            reason: `9〜14時の間（${rainHoursText}）にパラつく可能性。最大${maxPrecipTarget.toFixed(1)}mm。登下校時は大きな心配は少なめです。`
+          };
+        }
+        return {
+          cls: "watch",
+          icon: "🌦️",
+          title: "今は不要",
+          reason: `日中・授業中（${rainHoursText}）のみ雨予報。今後の予報変化に注意してください。最大${maxPrecipTarget.toFixed(1)}mm`
+        };
+      }
+
+      return {
+        cls: "clear",
+        icon: "🌤️",
+        title: "傘は不要！",
+        reason: `7〜18時に雨判定なし。降水確率最大${maxPop}%、予想降水量最大${maxPrecipAll.toFixed(1)}mmです。`
+      };
+    }
+
+    function analyzeTemperature(rows) {
+      const temps = rows.map(r => r.temp);
+      const max = Math.max(...temps);
+      const min = Math.min(...temps);
+      const diff = max - min;
+
+      const schoolRows = rows.filter(r => r.hour === 7 || r.hour === 8);
+      const schoolTemps = schoolRows.map(r => r.temp);
+      const schoolMin = Math.min(...schoolTemps);
+      const schoolMax = Math.max(...schoolTemps);
+
+      const comments = [];
+
+      if (max >= CONFIG.VERY_HOT_TEMP_C) {
+        comments.push("かなり暑い！熱中症対策と水分補給を忘れずに");
+      } else if (max >= CONFIG.HOT_TEMP_C) {
+        comments.push("暑くなりそう。水分補給を忘れずに");
+      }
+
+      if (min <= CONFIG.COLD_TEMP_C) {
+        comments.push("朝は冷え込むので暖かい上着を");
+      } else if (min <= CONFIG.COOL_TEMP_C) {
+        comments.push("朝は少しひんやり。羽織れる服があると安心");
+      }
+
+      if (diff >= CONFIG.BIG_TEMP_DIFF_C) {
+        comments.push("朝と昼の寒暖差に注意");
+      }
+
+      if (comments.length === 0) {
+        comments.push("気温は比較的過ごしやすそうです");
+      }
+
+      return {
+        max,
+        min,
+        schoolMin,
+        schoolMax,
+        comment: comments.slice(0, 2).join(" / ")
+      };
+    }
+
+    function renderMain(result) {
+      const card = $("mainCard");
+      card.className = `status-card ${result.cls}`;
+      $("mainIcon").textContent = result.icon;
+      $("statusText").textContent = result.title;
+      $("reasonText").textContent = result.reason;
+    }
+
+    function renderTimeline(rows) {
+      const timeline = $("timeline");
+      timeline.innerHTML = "";
+
+      for (const row of rows) {
+        const rain = isRainHour(row);
+        const small = rain && row.precip <= CONFIG.LIGHT_RAIN_MAX_MM;
+        const div = document.createElement("div");
+
+        div.className = `hour-cell ${rain ? (small ? "small" : "rain") : "clearish"}`;
+        div.innerHTML = `
+          <div class="hour">${row.hour}時</div>
+          <div class="wicon">${weatherIcon(row.code, rain)}</div>
+          <div class="pop">${Math.round(row.pop)}%</div>
+          <div class="mm">${row.precip.toFixed(1)}mm</div>
+        `;
+
+        timeline.appendChild(div);
+      }
+    }
+
+    function renderTemperature(temp) {
+      $("dayTemp").textContent = `${Math.round(temp.max)}℃ / ${Math.round(temp.min)}℃`;
+      $("schoolTemp").textContent =
+        temp.schoolMin === temp.schoolMax
+          ? `${Math.round(temp.schoolMin)}℃`
+          : `${Math.round(temp.schoolMin)}〜${Math.round(temp.schoolMax)}℃`;
+      $("tempComment").textContent = temp.comment;
+    }
+
+    function weatherIcon(code, rainDetected) {
+      if (rainDetected) {
+        if ([71, 73, 75, 77, 85, 86].includes(code)) return "雪";
+        if ([95, 96, 99].includes(code)) return "⛈️";
+        if ([80, 81, 82].includes(code)) return "🌧️";
+        return "☔";
+      }
+
+      if (code === 0) return "☀️";
+      if ([1, 2].includes(code)) return "🌤️";
+      if (code === 3) return "☁️";
+      if ([45, 48].includes(code)) return "🌫️";
+      return "🌤️";
+    }
+
+    function setLoading() {
+      $("mainCard").className = "status-card loading";
+      $("mainIcon").textContent = "⏳";
+      $("statusText").textContent = "読み込み中";
+      $("reasonText").textContent = "最新の通学予報を取得しています。";
+      $("timeline").innerHTML = "";
+      $("dayTemp").textContent = "--℃ / --℃";
+      $("schoolTemp").textContent = "--℃";
+      $("tempComment").textContent = "--";
+    }
+
+    function renderError(err) {
+      $("mainCard").className = "status-card loading";
+      $("mainIcon").textContent = "⚠️";
+      $("statusText").textContent = "取得できませんでした";
+      $("reasonText").innerHTML = `<span class="error">${err.message}</span><br>通信状況を確認して、更新ボタンを押してください。`;
+      $("updatedAt").textContent = "--:--";
+    }
+
+    function formatTokyoDateTime(date) {
+      return new Intl.DateTimeFormat("ja-JP", {
+        timeZone: CONFIG.TIMEZONE,
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23"
+      }).format(date);
+    }
+  </script>
+</body>
+</html>
